@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        html,
+        body {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .main-container {
+            border: 1px solid red;
+            height: 90%;
+        }
+
+        .button-container {
+            height: 10%;
+            padding: 10px 0px;
+            
+        }
+
+        .scrollable{
+            overflow-x: scroll;
+            overflow-y: hidden;
+            padding: 5px 0px;
+            white-space: nowrap;
+        }
+
+        .color-picker{
+            width: 60px;
+        }
+
+        .button-container button{
+            display: inline-block;margin: 0px 2px;
+        }
+
+        /* The snackbar - position it at the bottom and in the middle of the screen */
+        #snackbar {
+            visibility: hidden;
+            /* Hidden by default. Visible on click */
+            min-width: 250px;
+            /* Set a default minimum width */
+            margin-left: -125px;
+            /* Divide value of min-width by 2 */
+            background-color: #333;
+            /* Black background color */
+            color: #fff;
+            /* White text color */
+            text-align: center;
+            /* Centered text */
+            border-radius: 10px;
+            /* Rounded borders */
+            padding: 16px 0px;
+            /* Padding */
+            position: fixed;
+            /* Sit on top of the screen */
+            z-index: 1;
+            /* Add a z-index if needed */
+            left: 50%;
+            /* Center the snackbar */
+            top: 30px;
+            /* 30px from the bottom */
+        }
+
+        /* Show the snackbar when clicking on a button (class added with JavaScript) */
+        #snackbar.show {
+            visibility: visible;
+            /* Show the snackbar */
+            /* Add animation: Take 0.5 seconds to fade in and out the snackbar.
+            However, delay the fade out process for 2.5 seconds */
+            -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        /* Animations to fade the snackbar in and out */
+        @-webkit-keyframes fadein {
+            from {
+                top: 0;
+                opacity: 0;
+            }
+
+            to {
+                top: 30px;
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadein {
+            from {
+                top: 0;
+                opacity: 0;
+            }
+
+            to {
+                top: 30px;
+                opacity: 1;
+            }
+        }
+
+        @-webkit-keyframes fadeout {
+            from {
+                top: 30px;
+                opacity: 1;
+            }
+            
+            to {
+                top: 0;                
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeout {
+            from {
+                top: 30px;
+                opacity: 1;
+            }
+            
+            to {
+                top: 0;
+                opacity: 0;
+            }
+        }
+        
+    </style>
+</head>
+
+<body>
+    <div class="main-container" id="main-container">
+        <canvas id="canvas"></canvas>
+    </div>
+    <div class="button-container">
+        <div class="non-scroll">
+            <span id="total-object"></span>
+            <input class="color-picker" value="FF0000" data-jscolor="{preset:'small dark', position:'top'}"
+            onchange="updateColor(this.value)">
+        <button onclick="removeSelected()">Hapus</button>
+        </div>
+        <div class="scrollable">
+            <button onclick="addText()">Teks</button>            
+            <button onclick="addRect()">Persegi</button>
+            <button onclick="addImage()">Gambar</button>
+            <button onclick="showToast('coba')">Toast</button>
+            <div id="snackbar"></div>
+            <button>asd</button>
+            <button>asd</button>
+            <button>asd</button>
+        </div>
+    </div>
+    <script src="jscolor.js"></script>
+    <script>
+        // Here we can adjust defaults for all color pickers on page:
+        jscolor.presets.default = {
+            palette: [
+                '#000000', '#7d7d7d', '#870014', '#ec1c23', '#ff7e26', '#fef100', '#22b14b', '#00a1e7', '#3f47cc', '#a349a4',
+                '#ffffff', '#c3c3c3', '#b87957', '#feaec9', '#ffc80d', '#eee3af', '#b5e61d', '#99d9ea', '#7092be', '#c8bfe7',
+            ],
+            //paletteCols: 12,
+            //hideOnPaletteClick: true,
+            //width: 271,
+            //height: 151,
+            //position: 'right',
+            //previewPosition: 'right',
+            //backgroundColor: 'rgba(51,51,51,1)', controlBorderColor: 'rgba(153,153,153,1)', buttonColor: 'rgba(240,240,240,1)',
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/fabric"></script>
+    <script>
+        
+        function showToast(message) {
+            var x = document.getElementById("snackbar");
+            x.className = "show";
+            x.innerHTML = message
+            setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2500);
+        }
+
+        const container = document.getElementById("main-container")
+        const txtTotalObject = document.getElementById("total-object")
+        const canvas = new fabric.Canvas('canvas', {
+            width: container.offsetWidth - 1,
+            height: container.offsetHeight - 1
+        });
+        var color = '#FF0000FF'
+        var positionWhenAddX = 100;
+        var positionWhenAddY = 100;
+        var shapes = [];
+        //   canvas.height = window.innerHeight * 0.9
+        //   canvas.width = window.innerWidth * 0.95
+        // fitToContainer(canvas);
+
+        function updateColor(selectedcolor) {
+            color = selectedcolor
+        }
+        function fitToContainer(canvas) {
+            // Make it visually fill the positioned parent
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            // ...then set the internal size to match
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        // const rect = new fabric.Rect({
+        //     top: 100,
+        //     left: 100,
+        //     width: 60,
+        //     height: 70,
+        //     fill: color,
+        // });
+        // canvas.add(rect);
+
+        function addToCanvas(type, item){
+            canvas.add(item)
+            item.id = `${type}-${Date.now()}`
+            shapes.push(item)
+            console.log(shapes)
+            positionWhenAddX += 5
+            positionWhenAddY += 5
+            txtTotalObject.innerHTML = `${shapes.length} objek`
+        }
+
+        function addRect() {
+            let item = new fabric.Rect({
+                left: positionWhenAddX,
+                top: positionWhenAddX,
+                fill: color,
+                width: 100,
+                height: 100,
+                originX: 'center',
+                originY: 'center',
+                strokeWidth: 0
+            })
+            addToCanvas('rect', item)
+        }
+        
+
+        function addImage() {
+            let url = 'http://fabricjs.com/assets/pug_small.jpg'
+            url = 'Star1.svg'
+            fabric.Image.fromURL(url, function (myImg) {
+                var img1 = myImg.set({ 
+                    left: positionWhenAddY, top: positionWhenAddX });
+                addToCanvas('img', img1);
+            });            
+        }
+
+        function addText() {
+            let text = new fabric.IText('Masukkan Teks', {
+                left: positionWhenAddX,
+                top: positionWhenAddX,
+                fill: color,
+                fontFamily: 'sans-serif',
+                hasRotatingPoint: false,
+                centerTransform: true,
+                originX: 'center',
+                originY: 'center',
+                lockUniScaling: true
+            });
+
+            addToCanvas('text', text);
+
+            text.on('scaling', () => {
+                this.$scope.$evalAsync();
+            });
+        }
+
+        function removeSelected() {
+            let activeObjects = canvas.getActiveObjects();            
+            canvas.discardActiveObject();
+            if (activeObjects.length) {
+                canvas.remove.apply(canvas, activeObjects);
+
+                for (let i = 0; i < activeObjects.length; i++) {
+                    const element = activeObjects[i];
+
+                    for (let x = 0; x < shapes.length; x++) {
+                        const s = shapes[x];
+                        if (s.id === element.id){
+                            shapes.splice(x, 1)
+                        }
+                    }        
+                }
+            } else {
+                showToast('Pilih Objek dahulu')
+            }
+            txtTotalObject.innerHTML = `${shapes.length} objek`
+        }
+    </script>
+</body>
+
+</html>
